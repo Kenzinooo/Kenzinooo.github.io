@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		.boi{
+			width: 100px;
+			height: 80px;
+			background-color: darkred;
+			background-image: url(IMG_3664.jpeg);
+			background-size: contain;
+			background-repeat: norepeat;
+			display: inline-block;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript">
+		
+	document.addEventListener("click", function(){
+		let boi = document.createElement("div")
+		boi.classList.add("boi")
+		document.body.appendChild(boi)
+	})
+
+	</script>
+</body>
+</html>
+
+<div id="boi"> </div>
