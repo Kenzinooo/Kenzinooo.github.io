@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 80px 20px;
+		}
+
+		.back-button {
+			position: fixed;
+			top: 10px;
+			left: 10px;
+			text-decoration: none;
+			font-size: 18px;
+			background: #eee;
+			padding: 6px 12px;
+			border-radius: 6px;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+			color: black;
+			z-index: 9999;
+		}
+
+		.album {
+			width: 300px;
+			height: 300px;
+			margin-top: 30px;
+			background-image: url("Whole lotta red.webp");
+			background-size: cover;
+			background-position: center;
+			cursor: pointer;
+			border-radius: 10px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+		}
+	</style>
+</head>
+
+<body>
+
+<a href="index.html" class="back-button">⬅ Back</a>
+
+<h3>Thursday January 15th 2026</h3>
+<p>
+	SECOND JOURNAL ENTRYYYYYYY. Added confetti and it's kinda tuff. This song is kinda tuff too but yeah.
+</p>
+
+<div class="album" onclick="toggleAudio()"></div>
+
+<audio id="audio" preload="none">
+	<source src="Playboi Carti ft. Kanye West - Go2DaMoon (Instrumental) (prod. Connot).mp3">
+</audio>
+
+<script>
+	const audio = document.getElementById("audio");
+
+	function toggleAudio() {
+		if (audio.paused) {
+			audio.currentTime = 0;
+			audio.play();
+		} else {
+			audio.pause();
+		}
+	}
+</script>
+
+</body>
+</html>

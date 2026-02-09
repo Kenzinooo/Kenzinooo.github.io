@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Train</title>
+	<style>
+		#train {
+			display: flex;
+			gap: 12px;
+			margin-top: 20px;
+		}
+
+		.cart {
+			border: 1px solid black;
+			width: 120px;
+			height: 80px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+		}
+
+		.cart::before,
+		.cart::after {
+			content: "";
+			width: 25px;
+			height: 25px;
+			border: 1px solid black;
+			border-radius: 50%;
+			position: absolute;
+			bottom: -13px;
+			background: white;
+		}
+
+		.cart::before { left: 10px; }
+		.cart::after { right: 10px; }
+	</style>
+</head>
+<body>
+
+	<input id="person" placeholder="Name">
+	<button id="add-person">Add</button>
+	<button id="remove-last-person">Remove last</button>
+
+	<div id="train"></div>
+
+	<script>
+		const people = ["Evren", "Matthew", "Kendrick"]
+		const train = document.getElementById("train")
+
+		function renderTrain() {
+			train.innerHTML = ""
+
+			for (let i = 0; i < people.length; i++) {
+				const cart = document.createElement("div")
+				cart.className = "cart"
+				cart.textContent = people[i]
+				train.appendChild(cart)
+			}
+		}
+
+		renderTrain()
+
+		document.getElementById("add-person").onclick = () => {
+			const input = document.getElementById("person")
+			if (input.value !== "") {
+				people.push(input.value)
+				input.value = ""
+				renderTrain()
+			}
+		}
+
+		document.getElementById("remove-last-person").onclick = () => {
+			people.pop()
+			renderTrain()
+		}
+	</script>
+
+</body>
+</html>
