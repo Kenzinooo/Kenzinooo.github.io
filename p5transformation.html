@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>THE REAL TUNG TUNG GUY - SAHUR VERSION</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.13/lib/p5.min.js"></script>
+  <style>
+    body { margin: 0; background: #020205; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<script>
+let shake = 0;
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  rectMode(CENTER);
+}
+
+function draw() {
+  background(5, 5, 15);
+  
+  let timer = frameCount % 220;
+  let phase = "IDLE";
+  let isHitting = false;
+  let shoutText = "";
+
+  if (timer > 10 && timer < 30) {
+    phase = "TUNG";
+    isHitting = (timer % 20 < 10);
+    shoutText = "TUNG!";
+    if (timer === 11) shake = 15;
+  } 
+  else if (timer > 40 && timer < 60) {
+    phase = "TUNG";
+    isHitting = (timer % 20 < 10);
+    shoutText = "TUNG!";
+    if (timer === 41) shake = 15;
+  } 
+  else if (timer > 70 && timer < 90) {
+    phase = "TUNG";
+    isHitting = (timer % 20 < 10);
+    shoutText = "TUNG!";
+    if (timer === 71) shake = 15;
+  } 
+  else if (timer > 100 && timer < 200) {
+    phase = "SAHUR";
+    shoutText = "SAHHHHHHUUUUUURRRRRR!!!";
+    shake = random(2, 6); 
+  }
+
+  if (shake > 0) {
+    translate(random(-shake, shake), random(-shake, shake));
+    shake *= 0.9;
+  }
+
+  translate(width / 2, height / 2);
+
+  push();
+  let jump = (phase === "SAHUR") ? abs(sin(frameCount * 0.4)) * 50 : 0;
+  translate(0, 120 - jump);
+  drawTheGuy(phase, isHitting, shoutText);
+  pop();
+}
+
+function drawTheGuy(phase, isHitting, shoutText) {
+
+  stroke(0);
+  strokeWeight(2);
+  fill(245);
+  rect(0, 0, 180, 200, 10); 
+  
+  stroke(40, 90, 220);
+  strokeWeight(10);
+  for (let y = -80; y <= 90; y += 40) {
+    line(-90, y, 90, y);
+  }
+  
+  noStroke();
+  fill(255);
+  triangle(-50, -100, 50, -100, 0, -40);
+
+  fill(150, 100, 70); 
+  ellipse(0, -160, 140, 160);
+  
+  fill(10);
+  arc(0, -190, 150, 110, PI, TWO_PI);
+  for (let i = -70; i <= 70; i += 30) {
+    triangle(i - 15, -190, i, -230, i + 15, -190);
+  }
+
+  fill(255);
+  let eyeOpen = (phase === "SAHUR") ? 50 : 40;
+  ellipse(-40, -165, eyeOpen, eyeOpen);
+  ellipse(40, -165, eyeOpen, eyeOpen);
+  fill(0);
+  circle(-40, -165, 15);
+  circle(40, -165, 15);
+
+  fill(50, 0, 0);
+  let mouthH = (phase === "SAHUR") ? 80 : (phase === "TUNG" ? 40 : 10);
+  ellipse(0, -110, 50, mouthH);
+
+  push();
+  translate(0, 60);
+  if (phase === "TUNG" && isHitting) rotate(random(-0.05, 0.05));
+  fill(0, 140, 255);
+  rect(0, 0, 220, 140, 25);
+  stroke(255, 100);
+  strokeWeight(4);
+  noFill();
+  rect(0, 0, 220, 50);
+  fill(0, 110, 220);
+  noStroke();
+  rect(115, 0, 30, 60, 5);
+  pop();
+
+  fill(150, 100, 70);
+  // Grip arm
+  rect(-115, 60, 40, 50, 10);
+
+  push();
+  translate(80, 0);
+  if (phase === "TUNG" && isHitting) rotate(1.2); 
+  if (phase === "SAHUR") rotate(sin(frameCount * 0.5) * 0.3 + 0.5);
+
+  rect(40, 0, 70, 40, 20); 
+  circle(70, 0, 50);
+  
+  fill(120, 80, 50);
+  rect(70, -60, 15, 140, 5);
+  fill(200, 20, 20);
+  circle(70, -130, 50);
+  pop();
+
+  if (shoutText !== "") {
+    fill(255, 255, 0);
+    textAlign(CENTER);
+    textStyle(BOLD);
+    let txtSize = (phase === "SAHUR") ? 90 : 70;
+    textSize(txtSize);
+    text(shoutText, 0, -320);
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+</body>
+</html>
