@@ -1,0 +1,639 @@
+### Patch Notes // Update v4.3
+
+* **Spelling & Censorship Correction:** Updated all song names in the game tracklist to fix typos (e.g., corrected "I SEEEEEE YOU" to "I SEEEE YOU", "OPM BABII" to "OPM BABI", "TWIN TRIM" to "TRIM TWIN", and "DIS I GOT IT" to "DIS 1 GOT IT") while keeping the strict `*` character formatting for clean filtering.
+* **Audio Library Completion:** Mapped all 21 new audio filenames provided into the inner engine dictionary (`songFiles`), matching them exactly to your local file properties.
+* **Index Connection Verified:** The code now contains an explicit link inside the menu screen to jump back to `index.html`. As long as you use the index code provided in the previous step and name this game file exactly `game.html`, the two files will be perfectly linked back and forth.
+
+---
+
+### Balanced Game Code (`game.html`)
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I AM MUSIC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #ff1a1a;
+    --boss-red: #8b0000;
+    --interface-bg: rgba(0, 0, 0, 0.96);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'DM Mono', monospace; color:#fff; }
+  canvas { display:block; position:absolute; inset:0; }
+  #ui { position:absolute; inset:0; pointer-events:none; z-index:10; }
+
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; pointer-events:all;
+    background: var(--interface-bg);
+    transition: opacity 0.2s ease;
+  }
+  .screen.hidden { opacity:0; pointer-events:none; }
+
+  .logo {
+    font-family:'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 12vw, 110px);
+    letter-spacing: 0.15em;
+    line-height:1;
+    color:#fff;
+  }
+  .sub { font-size:12px; letter-spacing:0.4em; color:#fff; margin-top:12px; font-weight: 500;}
+  .label { font-size:11px; letter-spacing:0.2em; color:#888; text-transform:uppercase; }
+
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:16px 50px; font-family:'DM Mono', monospace; font-size:12px;
+    font-weight: 500; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer;
+    border:2px solid #fff; background:#fff; color:#000;
+    transition: background 0.15s, color 0.15s;
+    margin:10px;
+  }
+  .btn:hover { background:transparent; color:#fff; }
+  .btn.ghost { background:transparent; color:#fff; border:2px solid #333; }
+  .btn.ghost:hover { border-color:#fff; }
+
+  .modes { display:flex; gap:12px; margin:40px 0 30px; }
+  .mode-pill {
+    padding:10px 24px; font-size:11px; letter-spacing:0.15em; cursor:pointer;
+    border:2px solid #333; color:#888; transition:0.15s;
+    font-weight: 500;
+  }
+  .mode-pill:hover { color:#fff; border-color:#666; }
+  .mode-pill.active { border-color:var(--red); color:#fff; background:var(--red); }
+
+  #vault-screen { padding:40px 20px; }
+  .vault-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap:12px; width:min(1000px,95vw); max-height:60vh;
+    overflow-y:auto; padding:10px; border: 1px solid #222; background: #050505;
+  }
+  .vault-grid::-webkit-scrollbar { width:6px; }
+  .vault-grid::-webkit-scrollbar-track { background:#000; }
+  .vault-grid::-webkit-scrollbar-thumb { background:#333; }
+  
+  .track-card {
+    padding:18px; border:2px solid #222;
+    cursor:pointer; background:#0a0a0a;
+    transition: border-color 0.15s; position:relative;
+  }
+  .track-card:hover { border-color:#fff; }
+  .track-card.locked { opacity:0.15; cursor:not-allowed; border-color: #111; }
+  .track-card.locked:hover { border-color: #111; }
+  .track-num { font-size:10px; color:#666; display:block; margin-bottom:6px; }
+  .track-name { font-size:12px; font-weight:500; letter-spacing:0.02em; }
+  .track-tag { font-size:9px; color:var(--red); font-weight:bold; letter-spacing:0.1em; margin-top:4px;}
+
+  #hud {
+    position:absolute; inset:0; pointer-events:none;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:40px;
+  }
+  #hud .top { display:flex; justify-content:space-between; align-items:flex-start; }
+  #hud .bottom { display:flex; justify-content:space-between; align-items:flex-end; }
+
+  #song-name { font-family:'Bebas Neue', sans-serif; font-size:40px; letter-spacing:0.05em; color: #fff; }
+  #score-big { font-family:'Bebas Neue', sans-serif; font-size: 80px; line-height:1; text-align:right; }
+  #mode-tag { font-size:11px; letter-spacing:0.2em; color:var(--red); font-weight:500; }
+  #progress-bar-wrap { width:100%; height:4px; background:#222; margin-top:10px; }
+  #progress-bar { height:100%; background:#fff; width:0%; }
+
+  .settings-panel {
+    border: 1px solid #222; background: #080808; padding: 20px;
+    margin-top: 20px; width: 280px; text-align: center;
+  }
+  .setting-row { display:flex; justify-content:space-between; align-items:center; margin: 10px 0; }
+
+  #death-screen .crashed { font-family:'Bebas Neue', sans-serif; font-size:100px; color:var(--red); letter-spacing:0.05em; }
+  #final-score { font-size:16px; letter-spacing:0.2em; color:#888; margin:10px 0 40px; }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui">
+
+  <div id="menu-screen" class="screen">
+    <div class="logo">I AM MUSIC</div>
+    <div class="sub">PLAYBOI CARTI // ALBUM EDITION</div>
+    <div class="modes">
+      <div class="mode-pill active" data-mode="normal">NORMAL</div>
+      <div class="mode-pill" data-mode="speed">SPEED RUN</div>
+      <div class="mode-pill" data-mode="zen">ZEN</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <button class="btn" id="vaultBtn">OPEN ALBUM VAULT</button>
+      <a href="index.html" style="text-decoration:none;"><button class="btn ghost">← BACK TO INDEX</button></a>
+    </div>
+    
+    <div class="settings-panel">
+      <div class="label" style="margin-bottom: 10px; display:block;">SYSTEM SETTINGS</div>
+      <div class="setting-row">
+        <span style="font-size:11px; color:#aaa;">MASTER AUDIO</span>
+        <button class="btn ghost" id="globalMuteBtn" style="padding:6px 16px; margin:0; font-size:10px;">AUDIO: ON</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="vault-screen" class="screen hidden">
+    <div class="logo" style="font-size:50px; margin-bottom:4px;">THE VAULT</div>
+    <div class="label" style="margin-bottom:30px;">34 ALBUM TRACKS</div>
+    <div class="vault-grid" id="vaultGrid"></div>
+    <button class="btn ghost" style="margin-top:30px;" onclick="showScreen('menu-screen')">← MAIN MENU</button>
+  </div>
+
+  <div id="death-screen" class="screen hidden">
+    <div class="crashed">CRASHED</div>
+    <div id="final-score">SCORE: 0</div>
+    <button class="btn" id="retryBtn">RETRY LEVEL</button>
+    <button class="btn ghost" onclick="showScreen('vault-screen'); buildVault()">VIEW TRACKLIST</button>
+  </div>
+
+  <div id="win-screen" class="screen hidden">
+    <div class="logo" style="font-size:60px; margin-bottom:10px;">TRACK CLEARED</div>
+    <div id="win-score" style="font-size:14px; letter-spacing:0.2em; color:#888; margin-bottom:40px;"></div>
+    <button class="btn" id="nextBtn">NEXT TRACK</button>
+    <button class="btn ghost" onclick="showScreen('vault-screen'); buildVault()">VIEW TRACKLIST</button>
+  </div>
+
+  <div id="hud" style="display:none;">
+    <div class="top">
+      <div>
+        <div class="label" style="margin-bottom:4px;">TRACK PLAYING</div>
+        <div id="song-name">---</div>
+        <div id="mode-tag">NORMAL_MODE</div>
+      </div>
+      <div>
+        <div id="score-big">0</div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div style="width:40%;">
+        <div class="label">LEVEL COMPLETION</div>
+        <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+      </div>
+      <div class="label" id="lives-display">LIVES: 1 / 1</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const cvs = document.getElementById('gameCanvas');
+const ctx = cvs.getContext('2d');
+
+let audioCtx = null;
+let audio = new Audio();
+let menuAudio = new Audio();
+
+const trackTiki = "TIKI TIKI (Slowed).mp3";
+const trackYara = "Yara Yara Original vs Phonk vs Meme _ Aura of Letter _T_ Meme.mp3";
+
+let currentMenuSrc = "";
+let isMuted = false;
+let mode = 'normal', running = false, raf = null;
+let currentIdx = 0;
+let score = 0, lives = 1, maxLivesForTrack = 1, frame = 0;
+let pipes = [];
+let isBossLevel = false;
+
+let player = { x: 0, y: 0, vy: 0, radius: 14 };
+
+const BASE_GRAVITY = { normal: 0.4, speed: 0.55, zen: 0.35 };
+const BASE_JUMP = { normal: -7.5, speed: -9.0, zen: -6.5 };
+
+let currentGravity = 0.4;
+let currentJumpForce = -7.5;
+
+// Corrected song arrays
+const tracks = [
+  "POP OUT", "CRUSH", "K POP", "EVIL JORDAN", "MOJO JOJO", "PHILLY", "RADAR",
+  "RATHER LIE", "FINE SH*T", "BACKDOOR", "TOXIC", "MUNYUN", "CRANK",
+  "CHARGE DEM H*ES A FEE*", "GOOD CREDIT", "I SEEEE YOU BABY BOI",
+  "WAKE UP F1LTHY", "JUMPIN", "TRIM", "C*CAINE NOSE", "WE NEED ALL DA VIBES",
+  "OLYMPIAN", "OPM BABI", "TRIM TWIN", "LIKE WEEZY", "DIS 1 GOT IT",
+  "WALK", "HBA", "OVERLY", "SOUTH ATLANTA BABY", "DIFFERENT DAY",
+  "2024", "BACKR00MS", "FOMDJ"
+];
+
+const bossTracks = [
+  "RATHER LIE", 
+  "BACKDOOR", 
+  "I SEEEE YOU BABY BOI", 
+  "WE NEED ALL DA VIBES", 
+  "OLYMPIAN", 
+  "LIKE WEEZY", 
+  "FOMDJ"
+];
+
+// Recompiled complete audio mapping
+const songFiles = {
+  "POP OUT": "Playboi Carti - POP OUT (Official Audio) 4.mp3",
+  "CRUSH": "Playboi Carti - CRUSH [with Travis Scott] (Official Audio) 4.mp3",
+  "K POP": "Playboi Carti - K POP (Official Audio) 4.mp3",
+  "EVIL JORDAN": "Playboi Carti - EVIL J0RDAN (Official Audio) 4.mp3",
+  "MOJO JOJO": "Playboi Carti - MOJO JOJO (Official Audio) 4.mp3",
+  "PHILLY": "Playboi Carti - PHILLY [with Travis Scott] (Official Audio) 4.mp3",
+  "RADAR": "Playboi Carti - RADAR (Official Audio) 4.mp3",
+  "RATHER LIE": "Playboi Carti & The Weeknd - RATHER LIE (Official Audio) 4.mp3",
+  "FINE SH*T": "Playboi Carti - FINE SHIT (Official Audio) 4.mp3",
+  "BACKDOOR": "Playboi Carti - BACKD00R [feat. Kendrick Lamar & Jhene Aiko] (Official Audio) 4.mp3",
+  "TOXIC": "Playboi Carti - TOXIC [with Skepta] (Official Audio) 4.mp3",
+  "MUNYUN": "Playboi Carti - MUNYUN (Official Audio) 4.mp3",
+  "CRANK": "Playboi Carti - CRANK (Official Audio) 4.mp3",
+  "CHARGE DEM H*ES A FEE*": "Playboi Carti - CHARGE DEM HOES A FEE (Official Audio) 4.mp3",
+  "GOOD CREDIT": "Playboi Carti & Kendrick Lamar - GOOD CREDIT (Official Audio) 4.mp3",
+  "I SEEEE YOU BABY BOI": "Playboi Carti - I SEEEE YOU BABY BOI (Official Audio) 4.mp3",
+  "WAKE UP F1LTHY": "Playboi Carti - WAKE UP F1LTHY [with Travis Scott] (Official Audio) 4.mp3",
+  "JUMPIN": "Playboi Carti - JUMPIN [with Lil Uzi Vert] (Official Audio) 4.mp3",
+  "TRIM": "Playboi Carti - TRIM [with Future] (Official Audio) 4.mp3",
+  "C*CAINE NOSE": "Playboi Carti - COCAINE NOSE (Official Audio) 4.mp3",
+  "WE NEED ALL DA VIBES": "Playboi Carti - WE NEED ALL DA VIBES [feat. Young Thug & Ty Dolla $ign] (Official Audio) 4.mp3",
+  "OLYMPIAN": "Playboi Carti - OLYMPIAN (Official Audio) 4.mp3",
+  "OPM BABI": "Playboi Carti - OPM BABI (Official Audio) 4.mp3",
+  "TRIM TWIN": "Playboi Carti - TRIM TWIN [with Lil Uzi Vert] (Official Audio) 4.mp3",
+  "LIKE WEEZY": "Playboi Carti - LIKE WEEZY (Official Audio) 4.mp3",
+  "DIS 1 GOT IT": "Playboi Carti - DIS 1 GOT IT (Official Audio) 4.mp3",
+  "WALK": "Playboi Carti - WALK (Official Audio) 4.mp3",
+  "HBA": "Playboi Carti - HBA (Official Audio) 4.mp3",
+  "OVERLY": "Playboi Carti - OVERLY (Official Audio) 4.mp3",
+  "SOUTH ATLANTA BABY": "Playboi Carti - SOUTH ATLANTA BABY (Official Audio) 4.mp3",
+  "DIFFERENT DAY": "DIFFERENT DAY 4.mp3",
+  "2024": "2024 - Playboi Carti (I AM MUSIC _ DELUXE V2) 4.mp3",
+  "BACKR00MS": "_BACKR00MS_ FT TRAVIS SCOTT SEXISDEATH INDIANA420BITCH 4.mp3",
+  "FOMDJ": "Playboi Carti - FOMDJ 4.mp3"
+};
+
+let save = (() => {
+  try { return JSON.parse(localStorage.getItem('iam_v4')) || { unlocked: 1, bests: {} }; }
+  catch(e) { return { unlocked: 1, bests: {} }; }
+})();
+
+function resize() {
+  cvs.width = window.innerWidth;
+  cvs.height = window.innerHeight;
+  player.x = cvs.width * 0.25;
+  if (!running) player.y = cvs.height / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initSynthAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSynthTone(freq, type, duration) {
+  if (!audioCtx || isMuted) return;
+  try {
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function getTargetGoal(idx) {
+  if (bossTracks.includes(tracks[idx])) {
+    return 48; 
+  }
+  return 30 + (idx * 2); 
+}
+
+function getMaxLives(idx) {
+  if (bossTracks.includes(tracks[idx])) return 3;
+  if (idx < 5) return 1;       
+  if (idx < 15) return 2;      
+  return 3;                    
+}
+
+function spawnPipe() {
+  const levelProgression = currentIdx / tracks.length; 
+  let baseGap = Math.max(170, 240 - (levelProgression * 60)); 
+  if (isBossLevel) baseGap = 180; 
+
+  const gap = baseGap - (mode === 'speed' ? 15 : 0);
+  const minHeight = 85;
+  const top = minHeight + Math.random() * (cvs.height - gap - (minHeight * 2));
+  pipes.push({ x: cvs.width + 100, top, gap, passed: false });
+}
+
+function gameLoop() {
+  if (!running) return;
+  update();
+  render();
+  frame++;
+  raf = requestAnimationFrame(gameLoop);
+}
+
+function update() {
+  player.vy += currentGravity;
+  player.y += player.vy;
+
+  if (player.y + player.radius > cvs.height || player.y - player.radius < 0) {
+    if (mode === 'zen') {
+      player.y = player.y - player.radius < 0 ? player.radius : cvs.height - player.radius;
+      player.vy = 0;
+    } else {
+      handleCrash();
+      return;
+    }
+  }
+
+  const progressionModifier = currentIdx * 0.022; 
+  let currentSpeed = (mode === 'speed' ? 10.0 : 6.5) * (1 + progressionModifier);
+  
+  if (isBossLevel) currentSpeed = 7.5; 
+
+  currentGravity = BASE_GRAVITY[mode] * (1 + (progressionModifier * 0.4));
+  currentJumpForce = BASE_JUMP[mode] * (1 + (progressionModifier * 0.35));
+
+  const spawnFrequency = Math.max(40, (mode === 'speed' ? 55 : 75) - (currentIdx * 0.8));
+
+  if (frame % Math.floor(spawnFrequency) === 0) {
+    spawnPipe();
+  }
+
+  for (let i = pipes.length - 1; i >= 0; i--) {
+    const p = pipes[i];
+    p.x -= currentSpeed;
+
+    if (mode !== 'zen') {
+      const withinX = (player.x + player.radius > p.x) && (player.x - player.radius < p.x + 80);
+      if (withinX) {
+        if (player.y - player.radius < p.top || player.y + player.radius > p.top + p.gap) {
+          handleCrash();
+          return;
+        }
+      }
+    }
+
+    if (!p.passed && p.x + 40 < player.x) {
+      p.passed = true;
+      score++;
+      
+      playSynthTone(isBossLevel ? 150 + (score * 12) : 300 + (score * 8), isBossLevel ? 'sawtooth' : 'sine', 0.2);
+
+      const goal = getTargetGoal(currentIdx);
+      document.getElementById('score-big').textContent = score;
+      document.getElementById('progress-bar').style.width = Math.min(100, (score / goal) * 100) + '%';
+
+      if (score >= goal && currentIdx + 1 === save.unlocked && currentIdx + 1 < tracks.length) {
+        save.unlocked = currentIdx + 2;
+        persistSave();
+      }
+
+      if (score >= goal) {
+        handleWin();
+        return;
+      }
+    }
+
+    if (p.x < -120) pipes.splice(i, 1);
+  }
+}
+
+function render() {
+  if (isBossLevel) {
+    ctx.fillStyle = '#0a0202';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    
+    ctx.fillStyle = 'rgba(255, 26, 26, 0.04)';
+    ctx.fillRect(0, 0, 60, cvs.height);
+    ctx.fillRect(cvs.width - 60, 0, 60, cvs.height);
+  } else {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+  }
+
+  pipes.forEach(p => {
+    ctx.fillStyle = isBossLevel ? '#330707' : '#1a1a1a';
+    ctx.strokeStyle = isBossLevel ? '#ff1a1a' : '#fff';
+    ctx.lineWidth = isBossLevel ? 4 : 3;
+
+    ctx.fillRect(p.x, 0, 80, p.top);
+    ctx.strokeRect(p.x, -5, 80, p.top + 5);
+
+    ctx.fillRect(p.x, p.top + p.gap, 80, cvs.height - p.top - p.gap);
+    ctx.strokeRect(p.x, p.top + p.gap, 80, cvs.height - p.top - p.gap + 5);
+  });
+
+  ctx.fillStyle = isBossLevel ? '#ff1a1a' : '#fff';
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function jump() {
+  switchMenuAudio(trackTiki);
+  if (!running) return;
+  player.vy = currentJumpForce;
+  playSynthTone(180, 'triangle', 0.08);
+}
+
+function handleCrash() {
+  playSynthTone(90, 'sawtooth', 0.4);
+  if (mode === 'zen') return;
+
+  lives--;
+  updateHUDLives();
+  if (lives <= 0) {
+    running = false;
+    audio.pause();
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('final-score').textContent = `SCORE: ${score}`;
+    showScreen('death-screen');
+    switchMenuAudio(trackTiki);
+  } else {
+    player.y = cvs.height / 2;
+    player.vy = 0;
+    pipes = [];
+  }
+}
+
+function handleWin() {
+  running = false;
+  audio.pause();
+  playSynthTone(440, 'sine', 0.15);
+
+  const best = save.bests[tracks[currentIdx]] || 0;
+  if (score > best) { save.bests[tracks[currentIdx]] = score; persistSave(); }
+
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('win-score').textContent = `SCORE: ${score} // TARGET MET`;
+  
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentIdx + 1 < tracks.length) {
+    nextBtn.style.display = '';
+    nextBtn.onclick = () => launch(currentIdx + 1);
+  } else {
+    nextBtn.style.display = 'none';
+  }
+  showScreen('win-screen');
+  switchMenuAudio(trackYara);
+}
+
+function launch(idx) {
+  initSynthAudio();
+  currentIdx = idx;
+  isBossLevel = bossTracks.includes(tracks[idx]);
+  maxLivesForTrack = getMaxLives(idx);
+  lives = maxLivesForTrack;
+  
+  score = 0; frame = 0; pipes = [];
+  player.y = cvs.height / 2; player.vy = 0;
+  
+  const progressionModifier = currentIdx * 0.022;
+  currentGravity = BASE_GRAVITY[mode] * (1 + (progressionModifier * 0.4));
+  currentJumpForce = BASE_JUMP[mode] * (1 + (progressionModifier * 0.35));
+  
+  running = true;
+  menuAudio.pause();
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById('hud').style.display = 'flex';
+  
+  const labelText = isBossLevel ? "BOSS TRACK PLAYING" : "TRACK PLAYING";
+  document.getElementById('hud').querySelector('.label').textContent = labelText;
+  document.getElementById('song-name').textContent = tracks[idx];
+  document.getElementById('song-name').style.color = isBossLevel ? 'var(--red)' : '#fff';
+  
+  document.getElementById('mode-tag').textContent = isBossLevel ? 'BOSS_MODE' : mode.toUpperCase() + '_MODE';
+  document.getElementById('score-big').textContent = '0';
+  document.getElementById('progress-bar').style.width = '0%';
+  updateHUDLives();
+
+  audio.pause();
+  audio.src = songFiles[tracks[idx]] || `${tracks[idx]}.mp3`;
+  audio.load(); 
+  audio.currentTime = 0;
+  
+  if (!isMuted) {
+    audio.play().catch(() => {});
+  }
+
+  cancelAnimationFrame(raf);
+  gameLoop();
+}
+
+function switchMenuAudio(srcFile) {
+  if (isMuted) return;
+  if (currentMenuSrc !== srcFile) {
+    menuAudio.pause();
+    menuAudio.src = srcFile;
+    menuAudio.loop = true;
+    menuAudio.load();
+    currentMenuSrc = srcFile;
+  }
+  if (menuAudio.paused && !running) {
+    menuAudio.play().catch(() => {});
+  }
+}
+
+function buildVault() {
+  const grid = document.getElementById('vaultGrid');
+  grid.innerHTML = '';
+  tracks.forEach((t, i) => {
+    const unlocked = (mode === 'zen') || (i < save.unlocked);
+    const div = document.createElement('div');
+    div.className = `track-card${unlocked ? '' : ' locked'}`;
+    const best = save.bests[t] || 0;
+    const isBoss = bossTracks.includes(t);
+    
+    div.innerHTML = `
+      <span class="track-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="track-name" style="${isBoss ? 'color:var(--red); font-weight:bold;' : ''}">${t}</div>
+      ${isBoss ? `<div class="track-tag">BOSS TRACK</div>` : ''}
+      ${best > 0 ? `<div style="font-size:10px; color:#666; margin-top:6px;">BEST: ${best}</div>` : ''}
+    `;
+    if (unlocked) div.addEventListener('click', () => launch(i));
+    grid.appendChild(div);
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  
+  if(id === 'menu-screen' || id === 'vault-screen') {
+     switchMenuAudio(trackTiki);
+  }
+}
+
+function updateHUDLives() {
+  document.getElementById('lives-display').textContent = `LIVES: ${lives} / ${maxLivesForTrack}`;
+}
+
+function persistSave() {
+  try { localStorage.setItem('iam_v4', JSON.stringify(save)); } catch(e) {}
+}
+
+document.getElementById('globalMuteBtn').addEventListener('click', (e) => {
+  isMuted = !isMuted;
+  const btn = document.getElementById('globalMuteBtn');
+  if (isMuted) {
+    btn.textContent = "AUDIO: MUTED";
+    audio.pause();
+    menuAudio.pause();
+  } else {
+    btn.textContent = "AUDIO: ON";
+    if (!running) switchMenuAudio(currentMenuSrc || trackTiki);
+  }
+});
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') {
+    e.preventDefault();
+    jump();
+  }
+});
+window.addEventListener('touchstart', e => {
+  if (e.target.id === 'globalMuteBtn' || e.target.closest('.settings-panel')) return;
+  if (running) {
+    e.preventDefault();
+    jump();
+  } else {
+    jump();
+  }
+}, { passive: false });
+window.addEventListener('mousedown', e => {
+  if (e.target.id === 'globalMuteBtn' || e.target.closest('.settings-panel')) return;
+  if (running) jump();
+  else jump();
+});
+
+document.querySelectorAll('.mode-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    mode = pill.dataset.mode;
+  });
+});
+
+document.getElementById('vaultBtn').addEventListener('click', () => {
+  buildVault();
+  showScreen('vault-screen');
+});
+
+document.getElementById('retryBtn').addEventListener('click', () => {
+  launch(currentIdx);
+});
+</script>
+</body>
+</html>
+
+```
